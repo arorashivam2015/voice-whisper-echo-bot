@@ -1,6 +1,6 @@
 
 import React, { useRef, useState, useEffect } from 'react';
-import { Mic, MicOff, Volume2, Loader2 } from 'lucide-react';
+import { Mic, MicOff, Volume2, Loader2, StopCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { toast } from '@/lib/toast';
@@ -107,6 +107,23 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
     }
   };
 
+  const cancelRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
+      }
+      
+      // Clear audio chunks to prevent processing
+      audioChunksRef.current = [];
+      
+      toast.info('Recording cancelled');
+    }
+  };
+
   const toggleRecording = () => {
     if (isRecording) {
       stopRecording();
@@ -164,8 +181,21 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
         </Button>
       </div>
       
+      {/* Stop recording button - Only shown when actively recording */}
+      {isRecording && (
+        <Button
+          variant="destructive"
+          size="sm"
+          className="mt-4 flex items-center gap-1"
+          onClick={cancelRecording}
+        >
+          <StopCircle className="h-4 w-4" />
+          Stop listening
+        </Button>
+      )}
+      
       <p className="mt-4 text-sm text-muted-foreground">
-        {isRecording ? 'Listening...' : 
+        {isRecording ? 'Listening... Click to finish or press Stop to cancel' : 
          isProcessing ? 'Processing...' :
          isPlaying ? 'Speaking...' :
          isRequestingPermission ? 'Requesting microphone access...' :
