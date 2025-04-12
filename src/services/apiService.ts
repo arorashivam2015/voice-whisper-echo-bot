@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 interface ApiConfig {
@@ -97,6 +96,21 @@ export const loadApiConfig = async (): Promise<ApiConfig> => {
   return apiConfig;
 };
 
+// Debug information
+interface DebugInfo {
+  speechToTextResult?: string;
+  databricksInput?: string;
+  databricksResponse?: any;
+  textToSpeechInput?: string;
+}
+
+export let debugInfo: DebugInfo = {};
+
+// Reset debug info
+export const resetDebugInfo = () => {
+  debugInfo = {};
+};
+
 // Convert speech to text using Supabase edge function
 export const speechToText = async (audioBlob: Blob): Promise<string> => {
   if (!apiConfig.googleSpeechApiKey) {
@@ -126,7 +140,12 @@ export const speechToText = async (audioBlob: Blob): Promise<string> => {
     
     if (error) throw new Error(error.message);
     
-    return data?.transcript || '';
+    const transcript = data?.transcript || '';
+    
+    // Store debug info
+    debugInfo.speechToTextResult = transcript;
+    
+    return transcript;
   } catch (error) {
     console.error('Speech to text error:', error);
     throw error;
@@ -140,6 +159,9 @@ export const processDatabricksApi = async (text: string): Promise<string> => {
   }
 
   try {
+    // Store debug info
+    debugInfo.databricksInput = text;
+    
     // Call process-databricks edge function
     const { data, error } = await supabase.functions.invoke('process-databricks', {
       body: {
@@ -149,6 +171,9 @@ export const processDatabricksApi = async (text: string): Promise<string> => {
     });
     
     if (error) throw new Error(error.message);
+    
+    // Store debug info
+    debugInfo.databricksResponse = data?.rawDatabricksResponse;
     
     // Store conversation in Supabase if user is logged in
     try {
@@ -181,8 +206,11 @@ export const textToSpeech = async (text: string): Promise<ArrayBuffer> => {
   }
 
   try {
+    // Store debug info
+    debugInfo.textToSpeechInput = text;
+    
     // Call text-to-speech edge function
-    const response = await supabase.functions.invoke('text-to-speech', {
+    const { data, error } = await supabase.functions.invoke('text-to-speech', {
       body: {
         text,
         textToSpeechEndpoint: apiConfig.textToSpeechEndpoint,
@@ -191,7 +219,17 @@ export const textToSpeech = async (text: string): Promise<ArrayBuffer> => {
       responseType: 'arraybuffer'
     });
     
-    if (response.error) throw new Error(response.error.message);
+    if (error) throw new Error(error.message);
+    
+    // Convert Base64 to ArrayBuffer if needed
+    if (typeof data === 'string') {
+      const binaryString = atob(data);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      return bytes.buffer;
+    }
     
     return response.data as ArrayBuffer;
   } catch (error) {

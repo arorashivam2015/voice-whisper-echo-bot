@@ -5,9 +5,18 @@ import AudioRecorder from '@/components/AudioRecorder';
 import ApiConfigDialog from '@/components/ApiConfigDialog';
 import AuthDialog from '@/components/AuthDialog';
 import ConversationDisplay from '@/components/ConversationDisplay';
-import { speechToText, processDatabricksApi, textToSpeech, loadApiConfig } from '@/services/apiService';
-import { VolumeX } from 'lucide-react';
+import DebugPanel from '@/components/DebugPanel';
+import { 
+  speechToText, 
+  processDatabricksApi, 
+  textToSpeech, 
+  loadApiConfig,
+  resetDebugInfo
+} from '@/services/apiService';
+import { VolumeX, BugIcon } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 interface Message {
   id: string;
@@ -22,6 +31,7 @@ const Index = () => {
   const [isConfigured, setIsConfigured] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [conversationHistory, setConversationHistory] = useState<Message[]>([]);
+  const [showDebugPanel, setShowDebugPanel] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   
   // Check authentication status and load API config
@@ -132,6 +142,7 @@ const Index = () => {
     }
     
     setIsProcessing(true);
+    resetDebugInfo(); // Reset debug info at the start of new recording
     
     try {
       // Convert speech to text
@@ -213,6 +224,19 @@ const Index = () => {
       <div className="w-full max-w-md flex flex-col items-center gap-8 z-10">
         <h1 className="text-3xl font-bold text-gray-800 tracking-tight">Voice Assistant</h1>
         
+        {/* Debug toggle */}
+        <div className="flex items-center space-x-2 self-end">
+          <Switch
+            id="debug-mode"
+            checked={showDebugPanel}
+            onCheckedChange={setShowDebugPanel}
+          />
+          <Label htmlFor="debug-mode" className="flex items-center gap-1 cursor-pointer">
+            <BugIcon className="h-4 w-4" />
+            <span>Debug Mode</span>
+          </Label>
+        </div>
+        
         {/* Authentication status */}
         {isAuthenticated && (
           <div className="bg-green-50 border border-green-200 rounded-lg p-2 text-center">
@@ -229,6 +253,9 @@ const Index = () => {
             className="w-full mb-6"
           />
         )}
+        
+        {/* Debug panel */}
+        <DebugPanel isVisible={showDebugPanel} />
         
         {/* Main voice interface */}
         <div className="w-full">

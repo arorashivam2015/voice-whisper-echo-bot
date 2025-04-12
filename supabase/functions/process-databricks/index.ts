@@ -20,6 +20,8 @@ serve(async (req) => {
       throw new Error('Missing required parameters: text and databricksEndpoint are required');
     }
 
+    console.log(`Processing text with Databricks: "${text}"`);
+    
     // Process with Databricks API
     const response = await fetch(databricksEndpoint, {
       method: 'POST',
@@ -30,6 +32,7 @@ serve(async (req) => {
     });
 
     const data = await response.json();
+    console.log('Databricks API response:', data);
     
     if (!response.ok) {
       throw new Error(data.error?.message || 'Failed to process with Databricks API');
@@ -37,7 +40,9 @@ serve(async (req) => {
     
     return new Response(
       JSON.stringify({
+        inputText: text,
         response: data.response || '',
+        rawDatabricksResponse: data
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
