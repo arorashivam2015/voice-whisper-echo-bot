@@ -1,1 +1,11 @@
+
 project_id = "ezlxtwaptyrwagsdvykc"
+
+[functions.speech-to-text]
+verify_jwt = false
+
+[functions.process-databricks]
+verify_jwt = false
+
+[functions.text-to-speech]
+verify_jwt = false

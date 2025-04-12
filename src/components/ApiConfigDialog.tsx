@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -6,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Settings } from 'lucide-react';
 import { loadApiConfig, updateApiConfig } from '@/services/apiService';
 import { toast } from '@/lib/toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ApiConfigDialogProps {
   onConfigUpdated: () => void;
@@ -17,20 +19,38 @@ const ApiConfigDialog: React.FC<ApiConfigDialogProps> = ({ onConfigUpdated }) =>
   const [databricksEndpoint, setDatabricksEndpoint] = useState('');
   const [textToSpeechApiKey, setTextToSpeechApiKey] = useState('');
   const [textToSpeechEndpoint, setTextToSpeechEndpoint] = useState('');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    // Check authentication status
+    supabase.auth.getUser().then(({ data }) => {
+      setIsAuthenticated(!!data.user);
+    });
+
+    // Set up auth state change listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setIsAuthenticated(!!session?.user);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   useEffect(() => {
     // Load saved API configuration when the dialog opens
     if (open) {
-      const config = loadApiConfig();
-      setGoogleSpeechApiKey(config.googleSpeechApiKey);
-      setDatabricksEndpoint(config.databricksEndpoint);
-      setTextToSpeechApiKey(config.textToSpeechApiKey);
-      setTextToSpeechEndpoint(config.textToSpeechEndpoint);
+      loadApiConfig().then(config => {
+        setGoogleSpeechApiKey(config.googleSpeechApiKey);
+        setDatabricksEndpoint(config.databricksEndpoint);
+        setTextToSpeechApiKey(config.textToSpeechApiKey);
+        setTextToSpeechEndpoint(config.textToSpeechEndpoint);
+      });
     }
   }, [open]);
 
-  const handleSave = () => {
-    updateApiConfig({
+  const handleSave = async () => {
+    await updateApiConfig({
       googleSpeechApiKey,
       databricksEndpoint,
       textToSpeechApiKey,
@@ -57,6 +77,15 @@ const ApiConfigDialog: React.FC<ApiConfigDialogProps> = ({ onConfigUpdated }) =>
         </DialogHeader>
         
         <div className="space-y-4 py-4">
+          {!isAuthenticated && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+              <p className="text-yellow-800 text-sm">
+                Note: You are not logged in. Your API keys will be stored in local storage. 
+                For more secure storage, please sign in or create an account.
+              </p>
+            </div>
+          )}
+          
           <div className="space-y-2">
             <Label htmlFor="googleSpeechApiKey">Google Speech-to-Text API Key</Label>
             <Input

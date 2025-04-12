@@ -9,7 +9,63 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      api_configurations: {
+        Row: {
+          created_at: string | null
+          databricks_endpoint: string | null
+          google_speech_api_key: string | null
+          id: string
+          text_to_speech_api_key: string | null
+          text_to_speech_endpoint: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          databricks_endpoint?: string | null
+          google_speech_api_key?: string | null
+          id?: string
+          text_to_speech_api_key?: string | null
+          text_to_speech_endpoint?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          databricks_endpoint?: string | null
+          google_speech_api_key?: string | null
+          id?: string
+          text_to_speech_api_key?: string | null
+          text_to_speech_endpoint?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      conversations: {
+        Row: {
+          bot_response: string
+          created_at: string | null
+          id: string
+          user_id: string | null
+          user_message: string
+        }
+        Insert: {
+          bot_response: string
+          created_at?: string | null
+          id?: string
+          user_id?: string | null
+          user_message: string
+        }
+        Update: {
+          bot_response?: string
+          created_at?: string | null
+          id?: string
+          user_id?: string | null
+          user_message?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

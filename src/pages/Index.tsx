@@ -3,9 +3,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { toast } from '@/lib/toast';
 import AudioRecorder from '@/components/AudioRecorder';
 import ApiConfigDialog from '@/components/ApiConfigDialog';
+import AuthDialog from '@/components/AuthDialog';
 import ConversationDisplay from '@/components/ConversationDisplay';
 import { speechToText, processDatabricksApi, textToSpeech, loadApiConfig } from '@/services/apiService';
 import { VolumeX } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Message {
   id: string;
@@ -18,23 +20,93 @@ const Index = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isConfigured, setIsConfigured] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [conversationHistory, setConversationHistory] = useState<Message[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  
+  // Check authentication status and load API config
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setIsAuthenticated(!!user);
+      
+      if (user) {
+        // Load conversation history
+        loadConversationHistory();
+      }
+    };
+    
+    checkAuth();
+    
+    // Set up auth state change listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      const isUserAuthenticated = !!session?.user;
+      setIsAuthenticated(isUserAuthenticated);
+      
+      if (isUserAuthenticated) {
+        loadConversationHistory();
+      }
+    });
+    
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+  
+  // Load conversation history from Supabase
+  const loadConversationHistory = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('conversations')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(10);
+      
+      if (data && !error) {
+        const formattedHistory = data.flatMap((conv) => [
+          {
+            id: `user-${conv.id}`,
+            text: conv.user_message,
+            isUser: true
+          },
+          {
+            id: `bot-${conv.id}`,
+            text: conv.bot_response,
+            isUser: false
+          }
+        ]);
+        
+        setConversationHistory(formattedHistory);
+        
+        // Only update messages if none exist yet
+        if (messages.length === 0) {
+          setMessages(formattedHistory);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading conversation history:', error);
+    }
+  };
   
   // Check if APIs are configured
   useEffect(() => {
-    const config = loadApiConfig();
-    const hasConfig = !!(
-      config.googleSpeechApiKey && 
-      config.databricksEndpoint && 
-      config.textToSpeechApiKey &&
-      config.textToSpeechEndpoint
-    );
+    const checkConfig = async () => {
+      const config = await loadApiConfig();
+      const hasConfig = !!(
+        config.googleSpeechApiKey && 
+        config.databricksEndpoint && 
+        config.textToSpeechApiKey &&
+        config.textToSpeechEndpoint
+      );
+      
+      setIsConfigured(hasConfig);
+      
+      if (!hasConfig) {
+        toast.info('Please configure the API settings to begin');
+      }
+    };
     
-    setIsConfigured(hasConfig);
-    
-    if (!hasConfig) {
-      toast.info('Please configure the API settings to begin');
-    }
+    checkConfig();
   }, []);
 
   // Initialize audio element
@@ -115,8 +187,8 @@ const Index = () => {
     }
   };
 
-  const handleConfigUpdated = () => {
-    const config = loadApiConfig();
+  const handleConfigUpdated = async () => {
+    const config = await loadApiConfig();
     const hasConfig = !!(
       config.googleSpeechApiKey && 
       config.databricksEndpoint && 
@@ -127,6 +199,11 @@ const Index = () => {
     setIsConfigured(hasConfig);
   };
 
+  const handleAuthChange = () => {
+    // Reload API config after authentication changes
+    handleConfigUpdated();
+  };
+
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-white to-bot-background flex flex-col justify-center items-center p-4 relative overflow-hidden">
       {/* Background decorative elements */}
@@ -135,6 +212,15 @@ const Index = () => {
       
       <div className="w-full max-w-md flex flex-col items-center gap-8 z-10">
         <h1 className="text-3xl font-bold text-gray-800 tracking-tight">Voice Assistant</h1>
+        
+        {/* Authentication status */}
+        {isAuthenticated && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-2 text-center">
+            <p className="text-green-800 text-sm">
+              Logged in - Your API keys and conversations are securely stored
+            </p>
+          </div>
+        )}
         
         {/* Conversation history */}
         {messages.length > 0 && (
@@ -162,6 +248,12 @@ const Index = () => {
           </div>
         )}
       </div>
+      
+      {/* Auth dialog */}
+      <AuthDialog 
+        isAuthenticated={isAuthenticated}
+        onAuthChange={handleAuthChange}
+      />
       
       {/* Settings dialog */}
       <ApiConfigDialog onConfigUpdated={handleConfigUpdated} />
