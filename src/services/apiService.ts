@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 interface ApiConfig {
@@ -209,14 +210,13 @@ export const textToSpeech = async (text: string): Promise<ArrayBuffer> => {
     // Store debug info
     debugInfo.textToSpeechInput = text;
     
-    // Call text-to-speech edge function
+    // Call text-to-speech edge function - FIX: Remove responseType option
     const { data, error } = await supabase.functions.invoke('text-to-speech', {
       body: {
         text,
         textToSpeechEndpoint: apiConfig.textToSpeechEndpoint,
         textToSpeechApiKey: apiConfig.textToSpeechApiKey
-      },
-      responseType: 'arraybuffer'
+      }
     });
     
     if (error) throw new Error(error.message);
@@ -231,7 +231,8 @@ export const textToSpeech = async (text: string): Promise<ArrayBuffer> => {
       return bytes.buffer;
     }
     
-    return response.data as ArrayBuffer;
+    // FIX: Changed 'response.data' to 'data'
+    return data as ArrayBuffer;
   } catch (error) {
     console.error('Text to speech error:', error);
     throw error;
