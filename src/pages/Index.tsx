@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { toast } from '@/components/ui/sonner';
+import { toast } from '@/lib/toast';
 import AudioRecorder from '@/components/AudioRecorder';
 import ApiConfigDialog from '@/components/ApiConfigDialog';
 import ConversationDisplay from '@/components/ConversationDisplay';

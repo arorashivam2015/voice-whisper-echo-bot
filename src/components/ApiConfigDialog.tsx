@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -6,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Settings } from 'lucide-react';
 import { loadApiConfig, updateApiConfig } from '@/services/apiService';
-import { toast } from '@/components/ui/sonner';
+import { toast } from '@/lib/toast';
 
 interface ApiConfigDialogProps {
   onConfigUpdated: () => void;

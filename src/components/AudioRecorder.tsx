@@ -1,9 +1,8 @@
-
 import React, { useRef, useState, useEffect } from 'react';
 import { Mic, MicOff, Volume2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { toast } from '@/components/ui/sonner';
+import { toast } from '@/lib/toast';
 
 interface AudioRecorderProps {
   onAudioRecorded: (blob: Blob) => void;
@@ -23,7 +22,6 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
   const audioChunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
 
-  // Request microphone permission
   useEffect(() => {
     const checkMicrophonePermission = async () => {
       try {
@@ -31,7 +29,6 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
         streamRef.current = stream;
         setAudioPermissionGranted(true);
         
-        // Stop the stream immediately after permission check
         if (!isRecording) {
           stream.getTracks().forEach(track => track.stop());
           streamRef.current = null;
@@ -45,7 +42,6 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
 
     checkMicrophonePermission();
 
-    // Clean up
     return () => {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
@@ -89,7 +85,6 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
       mediaRecorderRef.current.stop();
       setIsRecording(false);
       
-      // Clean up stream
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
         streamRef.current = null;
@@ -108,7 +103,6 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
   return (
     <div className="flex flex-col items-center justify-center">
       <div className="relative">
-        {/* Pulsing ring animation */}
         {isRecording && (
           <div className="absolute inset-0 rounded-full bg-bot-primary opacity-20 animate-pulse-ring"></div>
         )}
