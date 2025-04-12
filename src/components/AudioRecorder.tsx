@@ -1,3 +1,4 @@
+
 import React, { useRef, useState, useEffect } from 'react';
 import { Mic, MicOff, Volume2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -17,31 +18,16 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
 }) => {
   const [isRecording, setIsRecording] = useState(false);
   const [audioPermissionGranted, setAudioPermissionGranted] = useState<boolean | null>(null);
+  const [isRequestingPermission, setIsRequestingPermission] = useState(false);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
 
+  // Request microphone permission on component mount
   useEffect(() => {
-    const checkMicrophonePermission = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        streamRef.current = stream;
-        setAudioPermissionGranted(true);
-        
-        if (!isRecording) {
-          stream.getTracks().forEach(track => track.stop());
-          streamRef.current = null;
-        }
-      } catch (error) {
-        console.error('Microphone permission error:', error);
-        setAudioPermissionGranted(false);
-        toast.error('Microphone access denied. Please enable microphone access.');
-      }
-    };
-
     checkMicrophonePermission();
-
+    
     return () => {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
@@ -49,8 +35,36 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
     };
   }, []);
 
+  const checkMicrophonePermission = async () => {
+    try {
+      setIsRequestingPermission(true);
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      setAudioPermissionGranted(true);
+      
+      if (!isRecording) {
+        stream.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
+      }
+    } catch (error) {
+      console.error('Microphone permission error:', error);
+      setAudioPermissionGranted(false);
+      toast.error('Microphone access denied. Please enable microphone access in your browser settings.');
+    } finally {
+      setIsRequestingPermission(false);
+    }
+  };
+
   const startRecording = async () => {
     try {
+      // If permission not granted yet, request it first
+      if (audioPermissionGranted === false) {
+        await checkMicrophonePermission();
+        if (audioPermissionGranted === false) {
+          return; // Still no permission, exit
+        }
+      }
+      
       if (!streamRef.current) {
         streamRef.current = await navigator.mediaDevices.getUserMedia({ audio: true });
       }
@@ -77,6 +91,7 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
     } catch (error) {
       console.error('Recording start error:', error);
       toast.error('Failed to start recording. Please check microphone access.');
+      setAudioPermissionGranted(false);
     }
   };
 
@@ -100,6 +115,14 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
     }
   };
 
+  const handleButtonClick = () => {
+    if (audioPermissionGranted === false) {
+      checkMicrophonePermission();
+    } else {
+      toggleRecording();
+    }
+  };
+
   return (
     <div className="flex flex-col items-center justify-center">
       <div className="relative">
@@ -118,10 +141,12 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
             isRecording ? "bg-red-500 text-white border-red-500" : 
             isProcessing ? "bg-yellow-100 border-yellow-500" :
             isPlaying ? "bg-bot-secondary border-bot-secondary text-white" :
+            isRequestingPermission ? "bg-gray-200 border-gray-400" :
+            audioPermissionGranted === false ? "bg-red-100 border-red-300 hover:bg-red-200 hover:text-red-800" :
             "bg-white border-bot-primary hover:bg-bot-primary hover:text-white"
           )}
-          onClick={toggleRecording}
-          disabled={isProcessing || isPlaying || audioPermissionGranted === false}
+          onClick={handleButtonClick}
+          disabled={isProcessing || isPlaying || isRequestingPermission}
         >
           {isProcessing ? (
             <Loader2 className="h-8 w-8 animate-spin" />
@@ -129,6 +154,10 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
             <Volume2 className="h-8 w-8" />
           ) : isRecording ? (
             <MicOff className="h-8 w-8" />
+          ) : isRequestingPermission ? (
+            <Loader2 className="h-8 w-8 animate-spin" />
+          ) : audioPermissionGranted === false ? (
+            <Mic className="h-8 w-8 text-red-500" />
           ) : (
             <Mic className="h-8 w-8" />
           )}
@@ -139,6 +168,8 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
         {isRecording ? 'Listening...' : 
          isProcessing ? 'Processing...' :
          isPlaying ? 'Speaking...' :
+         isRequestingPermission ? 'Requesting microphone access...' :
+         audioPermissionGranted === false ? 'Microphone access denied. Click to retry.' :
          'Tap to speak'}
       </p>
     </div>
