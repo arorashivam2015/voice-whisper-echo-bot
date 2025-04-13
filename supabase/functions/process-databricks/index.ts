@@ -30,13 +30,23 @@ serve(async (req) => {
     
     // Process with Databricks API
     try {
+      // Create request body based on Databricks API requirements
+      // Using all three possible formats to ensure compatibility
+      const requestBody = {
+        messages: [{ role: "user", content: text }],
+        input: text,
+        prompt: text
+      };
+      
+      console.log('Sending formatted request to Databricks:', JSON.stringify(requestBody));
+      
       const response = await fetch(databricksEndpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${databricksToken}`
         },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify(requestBody),
       });
 
       console.log('Databricks API status code:', response.status);
@@ -48,10 +58,21 @@ serve(async (req) => {
         throw new Error(data.error?.message || `Failed to process with Databricks API: ${response.status} ${response.statusText}`);
       }
       
+      // Extract response based on various possible response formats
+      const extractedResponse = 
+        data.response || 
+        data.result || 
+        data.output || 
+        data.answer || 
+        data.message || 
+        (data.choices && data.choices[0]?.message?.content) ||
+        (data.choices && data.choices[0]?.text) ||
+        '';
+      
       return new Response(
         JSON.stringify({
           inputText: text,
-          response: data.response || data.result || data.output || data.answer || data.message || '',
+          response: extractedResponse,
           rawDatabricksResponse: data
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
