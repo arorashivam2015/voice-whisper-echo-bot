@@ -34,8 +34,7 @@ serve(async (req) => {
       // Using all three possible formats to ensure compatibility
       const requestBody = {
         messages: [{ role: "user", content: text }],
-        input: text,
-        prompt: text
+        "max_tokens": 100
       };
       
       console.log('Sending formatted request to Databricks:', JSON.stringify(requestBody));
