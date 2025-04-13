@@ -25,32 +25,41 @@ serve(async (req) => {
     }
 
     console.log(`Processing text with Databricks: "${text}"`);
+    console.log(`Using Databricks endpoint: ${databricksEndpoint}`);
+    console.log('Databricks token is present:', !!databricksToken);
     
     // Process with Databricks API
-    const response = await fetch(databricksEndpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${databricksToken}`
-      },
-      body: JSON.stringify({ text }),
-    });
+    try {
+      const response = await fetch(databricksEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${databricksToken}`
+        },
+        body: JSON.stringify({ text }),
+      });
 
-    const data = await response.json();
-    console.log('Databricks API response:', data);
-    
-    if (!response.ok) {
-      throw new Error(data.error?.message || 'Failed to process with Databricks API');
+      console.log('Databricks API status code:', response.status);
+      
+      const data = await response.json();
+      console.log('Databricks API raw response:', JSON.stringify(data));
+      
+      if (!response.ok) {
+        throw new Error(data.error?.message || `Failed to process with Databricks API: ${response.status} ${response.statusText}`);
+      }
+      
+      return new Response(
+        JSON.stringify({
+          inputText: text,
+          response: data.response || data.result || data.output || data.answer || data.message || '',
+          rawDatabricksResponse: data
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    } catch (fetchError) {
+      console.error('Fetch error with Databricks API:', fetchError);
+      throw new Error(`Error fetching from Databricks API: ${fetchError.message}`);
     }
-    
-    return new Response(
-      JSON.stringify({
-        inputText: text,
-        response: data.response || '',
-        rawDatabricksResponse: data
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
   } catch (error) {
     console.error('Databricks API error:', error);
     return new Response(

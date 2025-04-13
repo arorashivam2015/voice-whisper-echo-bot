@@ -60,6 +60,16 @@ const DebugPanel: React.FC<DebugPanelProps> = ({ isVisible }) => {
               </div>
             )}
             
+            {/* Databricks Error (if any) */}
+            {debugInfo.databricksError && (
+              <div>
+                <h3 className="text-xs font-semibold text-gray-600 uppercase mb-1 text-red-500">Databricks Error:</h3>
+                <p className="text-sm p-2 bg-red-50 rounded border border-red-200 text-red-700">
+                  {debugInfo.databricksError}
+                </p>
+              </div>
+            )}
+            
             {/* Databricks Raw Response Data */}
             {debugInfo.databricksRawResponseData && (
               <div>
@@ -98,6 +108,7 @@ const DebugPanel: React.FC<DebugPanelProps> = ({ isVisible }) => {
              !debugInfo.databricksInput && 
              !debugInfo.databricksResponse && 
              !debugInfo.databricksRawResponseData &&
+             !debugInfo.databricksError &&
              !debugInfo.textToSpeechInput && (
               <p className="text-sm text-gray-500 italic">No debug information available yet. Start a conversation to see data.</p>
             )}

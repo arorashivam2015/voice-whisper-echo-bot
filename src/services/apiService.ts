@@ -109,6 +109,7 @@ interface DebugInfo {
   databricksResponse?: any;
   databricksRawRequestBody?: any;
   databricksRawResponseData?: any;
+  databricksError?: string;
   textToSpeechInput?: string;
 }
 
@@ -183,12 +184,24 @@ export const processDatabricksApi = async (text: string): Promise<string> => {
     // Store the raw request for debugging
     debugInfo.databricksRawRequestBody = { ...requestBody, databricksToken: '***REDACTED***' };
     
+    console.log("Sending request to Databricks API:", { 
+      endpoint: apiConfig.databricksEndpoint,
+      hasToken: !!apiConfig.databricksToken, 
+      text
+    });
+    
     // Call process-databricks edge function
     const { data, error } = await supabase.functions.invoke('process-databricks', {
       body: requestBody
     });
     
-    if (error) throw new Error(error.message);
+    if (error) {
+      console.error('Error from process-databricks function:', error);
+      debugInfo.databricksError = error.message;
+      throw new Error(error.message);
+    }
+    
+    console.log("Received response from Databricks API:", data);
     
     // Store debug info
     debugInfo.databricksResponse = data?.response || '';
@@ -214,6 +227,7 @@ export const processDatabricksApi = async (text: string): Promise<string> => {
     return data?.response || '';
   } catch (error) {
     console.error('Databricks API error:', error);
+    debugInfo.databricksError = error.message;
     throw error;
   }
 };
