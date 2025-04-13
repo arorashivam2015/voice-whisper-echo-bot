@@ -17,6 +17,7 @@ const ApiConfigDialog: React.FC<ApiConfigDialogProps> = ({ onConfigUpdated }) =>
   const [open, setOpen] = useState(false);
   const [googleSpeechApiKey, setGoogleSpeechApiKey] = useState('');
   const [databricksEndpoint, setDatabricksEndpoint] = useState('');
+  const [databricksToken, setDatabricksToken] = useState('');
   const [textToSpeechApiKey, setTextToSpeechApiKey] = useState('');
   const [textToSpeechEndpoint, setTextToSpeechEndpoint] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -43,6 +44,7 @@ const ApiConfigDialog: React.FC<ApiConfigDialogProps> = ({ onConfigUpdated }) =>
       loadApiConfig().then(config => {
         setGoogleSpeechApiKey(config.googleSpeechApiKey);
         setDatabricksEndpoint(config.databricksEndpoint);
+        setDatabricksToken(config.databricksToken);
         setTextToSpeechApiKey(config.textToSpeechApiKey);
         setTextToSpeechEndpoint(config.textToSpeechEndpoint);
       });
@@ -53,6 +55,7 @@ const ApiConfigDialog: React.FC<ApiConfigDialogProps> = ({ onConfigUpdated }) =>
     await updateApiConfig({
       googleSpeechApiKey,
       databricksEndpoint,
+      databricksToken,
       textToSpeechApiKey,
       textToSpeechEndpoint
     });
@@ -104,6 +107,17 @@ const ApiConfigDialog: React.FC<ApiConfigDialogProps> = ({ onConfigUpdated }) =>
               placeholder="https://your-databricks-endpoint.com"
               value={databricksEndpoint}
               onChange={(e) => setDatabricksEndpoint(e.target.value)}
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="databricksToken">Databricks API Token</Label>
+            <Input
+              id="databricksToken"
+              type="password"
+              placeholder="Enter your Databricks API token"
+              value={databricksToken}
+              onChange={(e) => setDatabricksToken(e.target.value)}
             />
           </div>
           

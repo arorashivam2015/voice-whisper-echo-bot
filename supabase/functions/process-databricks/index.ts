@@ -14,10 +14,14 @@ serve(async (req) => {
   }
 
   try {
-    const { text, databricksEndpoint } = await req.json();
+    const { text, databricksEndpoint, databricksToken } = await req.json();
 
     if (!text || !databricksEndpoint) {
       throw new Error('Missing required parameters: text and databricksEndpoint are required');
+    }
+    
+    if (!databricksToken) {
+      throw new Error('Missing required parameter: databricksToken is required');
     }
 
     console.log(`Processing text with Databricks: "${text}"`);
@@ -27,6 +31,7 @@ serve(async (req) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${databricksToken}`
       },
       body: JSON.stringify({ text }),
     });

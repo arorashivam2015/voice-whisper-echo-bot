@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 interface ApiConfig {
   googleSpeechApiKey: string;
   databricksEndpoint: string;
+  databricksToken: string;
   textToSpeechApiKey: string;
   textToSpeechEndpoint: string;
 }
@@ -12,6 +13,7 @@ interface ApiConfig {
 let apiConfig: ApiConfig = {
   googleSpeechApiKey: '',
   databricksEndpoint: '',
+  databricksToken: '',
   textToSpeechApiKey: '',
   textToSpeechEndpoint: ''
 };
@@ -33,6 +35,7 @@ export const updateApiConfig = async (config: Partial<ApiConfig>) => {
         .update({
           google_speech_api_key: apiConfig.googleSpeechApiKey,
           databricks_endpoint: apiConfig.databricksEndpoint,
+          databricks_token: apiConfig.databricksToken,
           text_to_speech_api_key: apiConfig.textToSpeechApiKey,
           text_to_speech_endpoint: apiConfig.textToSpeechEndpoint,
           updated_at: new Date().toISOString()
@@ -47,6 +50,7 @@ export const updateApiConfig = async (config: Partial<ApiConfig>) => {
             user_id: user.id,
             google_speech_api_key: apiConfig.googleSpeechApiKey,
             databricks_endpoint: apiConfig.databricksEndpoint,
+            databricks_token: apiConfig.databricksToken,
             text_to_speech_api_key: apiConfig.textToSpeechApiKey,
             text_to_speech_endpoint: apiConfig.textToSpeechEndpoint
           }]);
@@ -75,6 +79,7 @@ export const loadApiConfig = async (): Promise<ApiConfig> => {
         apiConfig = {
           googleSpeechApiKey: data.google_speech_api_key || '',
           databricksEndpoint: data.databricks_endpoint || '',
+          databricksToken: data.databricks_token || '',
           textToSpeechApiKey: data.text_to_speech_api_key || '',
           textToSpeechEndpoint: data.text_to_speech_endpoint || ''
         };
@@ -102,6 +107,8 @@ interface DebugInfo {
   speechToTextResult?: string;
   databricksInput?: string;
   databricksResponse?: any;
+  databricksRawRequestBody?: any;
+  databricksRawResponseData?: any;
   textToSpeechInput?: string;
 }
 
@@ -158,23 +165,34 @@ export const processDatabricksApi = async (text: string): Promise<string> => {
   if (!apiConfig.databricksEndpoint) {
     throw new Error('Databricks endpoint not configured');
   }
+  
+  if (!apiConfig.databricksToken) {
+    throw new Error('Databricks API token not configured');
+  }
 
   try {
     // Store debug info
     debugInfo.databricksInput = text;
     
+    const requestBody = {
+      text,
+      databricksEndpoint: apiConfig.databricksEndpoint,
+      databricksToken: apiConfig.databricksToken
+    };
+    
+    // Store the raw request for debugging
+    debugInfo.databricksRawRequestBody = { ...requestBody, databricksToken: '***REDACTED***' };
+    
     // Call process-databricks edge function
     const { data, error } = await supabase.functions.invoke('process-databricks', {
-      body: {
-        text,
-        databricksEndpoint: apiConfig.databricksEndpoint
-      }
+      body: requestBody
     });
     
     if (error) throw new Error(error.message);
     
     // Store debug info
-    debugInfo.databricksResponse = data?.rawDatabricksResponse;
+    debugInfo.databricksResponse = data?.response || '';
+    debugInfo.databricksRawResponseData = data;
     
     // Store conversation in Supabase if user is logged in
     try {
