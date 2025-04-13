@@ -35,7 +35,7 @@ export const updateApiConfig = async (config: Partial<ApiConfig>) => {
         .update({
           google_speech_api_key: apiConfig.googleSpeechApiKey,
           databricks_endpoint: apiConfig.databricksEndpoint,
-          databricks_token: apiConfig.databricksToken,
+          databricks_token: apiConfig.databricksToken, // Add this field
           text_to_speech_api_key: apiConfig.textToSpeechApiKey,
           text_to_speech_endpoint: apiConfig.textToSpeechEndpoint,
           updated_at: new Date().toISOString()
@@ -50,7 +50,7 @@ export const updateApiConfig = async (config: Partial<ApiConfig>) => {
             user_id: user.id,
             google_speech_api_key: apiConfig.googleSpeechApiKey,
             databricks_endpoint: apiConfig.databricksEndpoint,
-            databricks_token: apiConfig.databricksToken,
+            databricks_token: apiConfig.databricksToken, // Add this field
             text_to_speech_api_key: apiConfig.textToSpeechApiKey,
             text_to_speech_endpoint: apiConfig.textToSpeechEndpoint
           }]);
@@ -79,7 +79,7 @@ export const loadApiConfig = async (): Promise<ApiConfig> => {
         apiConfig = {
           googleSpeechApiKey: data.google_speech_api_key || '',
           databricksEndpoint: data.databricks_endpoint || '',
-          databricksToken: data.databricks_token || '',
+          databricksToken: data.databricks_token || '', // Add fallback for databricks_token
           textToSpeechApiKey: data.text_to_speech_api_key || '',
           textToSpeechEndpoint: data.text_to_speech_endpoint || ''
         };
