@@ -163,7 +163,7 @@ const Index = () => {
       
       setMessages(prev => [...prev, userMessage]);
       
-      // Process with Databricks API
+      // Process with Databricks API - the text-to-speech will be triggered inside this function
       const botResponse = await processDatabricksApi(transcribedText);
       
       // Add bot message
@@ -175,7 +175,7 @@ const Index = () => {
       
       setMessages(prev => [...prev, botMessage]);
       
-      // Convert response to speech
+      // Convert response to speech and play it
       const audioData = await textToSpeech(botResponse);
       
       // Play the response

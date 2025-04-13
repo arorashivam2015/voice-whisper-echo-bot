@@ -111,6 +111,7 @@ interface DebugInfo {
   databricksRawResponseData?: any;
   databricksError?: string;
   textToSpeechInput?: string;
+  textToSpeechError?: string;
 }
 
 export let debugInfo: DebugInfo = {};
@@ -162,7 +163,7 @@ export const speechToText = async (audioBlob: Blob): Promise<string> => {
 };
 
 // Process text with Databricks API through edge function
-export const processDatabricksApi = async (text: string): Promise<string> => {
+export const processDatabricksApi = async (text: string, autoPlay: boolean = true): Promise<string> => {
   if (!apiConfig.databricksEndpoint) {
     throw new Error('Databricks endpoint not configured');
   }
@@ -224,7 +225,21 @@ export const processDatabricksApi = async (text: string): Promise<string> => {
       // Continue even if storing conversation fails
     }
     
-    return data?.response || '';
+    const botResponse = data?.response || '';
+    
+    // Automatically trigger text-to-speech if autoPlay is enabled
+    if (autoPlay && botResponse && apiConfig.textToSpeechApiKey && apiConfig.textToSpeechEndpoint) {
+      try {
+        const audioData = await textToSpeech(botResponse);
+        // We don't need to do anything here as the Index.tsx handles the audio playback
+      } catch (speechError) {
+        console.error('Error converting text to speech:', speechError);
+        debugInfo.textToSpeechError = speechError.message;
+        // Continue even if text-to-speech fails
+      }
+    }
+    
+    return botResponse;
   } catch (error) {
     console.error('Databricks API error:', error);
     debugInfo.databricksError = error.message;
@@ -242,7 +257,7 @@ export const textToSpeech = async (text: string): Promise<ArrayBuffer> => {
     // Store debug info
     debugInfo.textToSpeechInput = text;
     
-    // Call text-to-speech edge function - FIX: Remove responseType option
+    // Call text-to-speech edge function
     const { data, error } = await supabase.functions.invoke('text-to-speech', {
       body: {
         text,
@@ -263,10 +278,10 @@ export const textToSpeech = async (text: string): Promise<ArrayBuffer> => {
       return bytes.buffer;
     }
     
-    // FIX: Changed 'response.data' to 'data'
     return data as ArrayBuffer;
   } catch (error) {
     console.error('Text to speech error:', error);
+    debugInfo.textToSpeechError = error.message;
     throw error;
   }
 };
