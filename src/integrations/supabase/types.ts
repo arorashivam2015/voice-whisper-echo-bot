@@ -13,6 +13,7 @@ export type Database = {
         Row: {
           created_at: string | null
           databricks_endpoint: string | null
+          databricks_token: string | null
           google_speech_api_key: string | null
           id: string
           text_to_speech_api_key: string | null
@@ -23,6 +24,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           databricks_endpoint?: string | null
+          databricks_token?: string | null
           google_speech_api_key?: string | null
           id?: string
           text_to_speech_api_key?: string | null
@@ -33,6 +35,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           databricks_endpoint?: string | null
+          databricks_token?: string | null
           google_speech_api_key?: string | null
           id?: string
           text_to_speech_api_key?: string | null
